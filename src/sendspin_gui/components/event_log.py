@@ -37,7 +37,7 @@ class EventLog(ctk.CTkFrame):
         self.filter_var = ctk.StringVar(value="all")
         filter_menu = ctk.CTkOptionMenu(
             header_frame,
-            values=["all", "info", "success", "warning", "error"],
+            values=["all", "debug", "info", "success", "warning", "error"],
             variable=self.filter_var,
             command=self._apply_filter,
             width=100,
@@ -65,6 +65,7 @@ class EventLog(ctk.CTkFrame):
         self.log_textbox.grid(row=1, column=0, sticky="nsew", padx=10, pady=(5, 10))
 
         # Configure text tags for different log levels
+        self.log_textbox._textbox.tag_configure("debug", foreground="#888888")
         self.log_textbox._textbox.tag_configure("info", foreground="#ffffff")
         self.log_textbox._textbox.tag_configure("success", foreground="#00ff00")
         self.log_textbox._textbox.tag_configure("warning", foreground="#ffff00")
@@ -75,7 +76,7 @@ class EventLog(ctk.CTkFrame):
 
         Args:
             message: The event message
-            level: Log level (info, success, warning, error)
+            level: Log level (debug, info, success, warning, error)
         """
         self._events.append((message, level))
 

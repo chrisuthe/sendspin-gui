@@ -37,7 +37,7 @@ class ServerPanel(ctk.CTkFrame):
             text="Server Configuration",
             font=ctk.CTkFont(size=16, weight="bold"),
         )
-        title.grid(row=0, column=0, columnspan=6, sticky="w", padx=10, pady=(10, 5))
+        title.grid(row=0, column=0, columnspan=7, sticky="w", padx=10, pady=(10, 5))
 
         # Row 1: Server ID and Name
         ctk.CTkLabel(self, text="Server ID:").grid(row=1, column=0, padx=(10, 5), pady=5, sticky="e")
@@ -59,10 +59,21 @@ class ServerPanel(ctk.CTkFrame):
         self.mdns_var = ctk.BooleanVar(value=True)
         self.mdns_checkbox = ctk.CTkCheckBox(
             self,
-            text="Enable mDNS (auto-discovery)",
+            text="Enable mDNS",
             variable=self.mdns_var,
         )
-        self.mdns_checkbox.grid(row=2, column=2, columnspan=2, padx=20, pady=5, sticky="w")
+        self.mdns_checkbox.grid(row=2, column=2, padx=(20, 5), pady=5, sticky="w")
+
+        # Log level dropdown
+        ctk.CTkLabel(self, text="Log Level:").grid(row=2, column=3, padx=(10, 5), pady=5, sticky="e")
+        self.log_level_var = ctk.StringVar(value="INFO")
+        self.log_level_menu = ctk.CTkOptionMenu(
+            self,
+            values=["DEBUG", "INFO", "WARNING", "ERROR"],
+            variable=self.log_level_var,
+            width=100,
+        )
+        self.log_level_menu.grid(row=2, column=4, padx=5, pady=5, sticky="w")
 
         # Start/Stop button
         self.start_stop_btn = ctk.CTkButton(
@@ -73,11 +84,11 @@ class ServerPanel(ctk.CTkFrame):
             fg_color="green",
             hover_color="darkgreen",
         )
-        self.start_stop_btn.grid(row=1, column=4, rowspan=2, padx=20, pady=10)
+        self.start_stop_btn.grid(row=1, column=5, rowspan=2, padx=20, pady=10)
 
         # Status indicator
         self.status_frame = ctk.CTkFrame(self, width=20, height=20, corner_radius=10)
-        self.status_frame.grid(row=1, column=5, rowspan=2, padx=(0, 10), pady=10)
+        self.status_frame.grid(row=1, column=6, rowspan=2, padx=(0, 10), pady=10)
         self._update_status_indicator()
 
     def _toggle_server(self) -> None:
@@ -111,6 +122,7 @@ class ServerPanel(ctk.CTkFrame):
             self.server_name_entry.configure(state="disabled")
             self.port_entry.configure(state="disabled")
             self.mdns_checkbox.configure(state="disabled")
+            self.log_level_menu.configure(state="disabled")
         else:
             self.start_stop_btn.configure(
                 text="Start Server",
@@ -122,8 +134,13 @@ class ServerPanel(ctk.CTkFrame):
             self.server_name_entry.configure(state="normal")
             self.port_entry.configure(state="normal")
             self.mdns_checkbox.configure(state="normal")
+            self.log_level_menu.configure(state="normal")
 
     def _update_status_indicator(self) -> None:
         """Update the status indicator color."""
         color = "#00ff00" if self._is_running else "#ff0000"
         self.status_frame.configure(fg_color=color)
+
+    def get_log_level(self) -> str:
+        """Get the selected log level."""
+        return self.log_level_var.get()

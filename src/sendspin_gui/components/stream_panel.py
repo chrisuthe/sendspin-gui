@@ -17,12 +17,20 @@ class StreamPanel(ctk.CTkFrame):
         parent: ctk.CTkFrame,
         on_stream_file: Callable[[str, str], None],
         on_stream_test_tone: Callable[[int, float, str], None],
+        on_stream_url: Callable[[str, str], None] | None = None,
+        on_pause_resume: Callable[[], None] | None = None,
+        on_stop: Callable[[], None] | None = None,
     ) -> None:
         super().__init__(parent)
 
         self._on_stream_file = on_stream_file
         self._on_stream_test_tone = on_stream_test_tone
+        self._on_stream_url = on_stream_url
+        self._on_pause_resume = on_pause_resume
+        self._on_stop = on_stop
         self._selected_file: str | None = None
+        self._is_streaming = False
+        self._is_paused = False
 
         self._build_ui()
 
@@ -53,6 +61,9 @@ class StreamPanel(ctk.CTkFrame):
         # URL tab (placeholder for future)
         url_tab = self.tabview.add("URL")
         self._build_url_tab(url_tab)
+
+        # Playback controls
+        self._build_controls()
 
     def _build_file_tab(self, parent: ctk.CTkFrame) -> None:
         """Build the file streaming tab."""
@@ -172,16 +183,49 @@ class StreamPanel(ctk.CTkFrame):
         self.play_tone_btn.grid(row=3, column=0, columnspan=3, padx=10, pady=15)
 
     def _build_url_tab(self, parent: ctk.CTkFrame) -> None:
-        """Build the URL streaming tab (placeholder)."""
-        parent.grid_columnconfigure(0, weight=1)
+        """Build the URL streaming tab."""
+        parent.grid_columnconfigure(1, weight=1)
 
-        placeholder = ctk.CTkLabel(
-            parent,
-            text="URL streaming coming soon...\n\nThis will allow streaming from:\n• HTTP/HTTPS URLs\n• Internet radio streams\n• Other network sources",
-            text_color="gray",
-            justify="center",
+        # URL input
+        ctk.CTkLabel(parent, text="Stream URL:").grid(
+            row=0, column=0, padx=10, pady=10, sticky="w"
         )
-        placeholder.grid(row=0, column=0, padx=20, pady=40)
+
+        self.url_entry = ctk.CTkEntry(
+            parent,
+            placeholder_text="http:// or https:// URL...",
+        )
+        self.url_entry.grid(row=0, column=1, columnspan=2, padx=5, pady=10, sticky="ew")
+
+        # Target group selection
+        ctk.CTkLabel(parent, text="Target Group:").grid(
+            row=1, column=0, padx=10, pady=5, sticky="w"
+        )
+
+        self.url_group_entry = ctk.CTkEntry(
+            parent,
+            placeholder_text="Group ID (or 'all')",
+        )
+        self.url_group_entry.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
+
+        # Stream button
+        self.stream_url_btn = ctk.CTkButton(
+            parent,
+            text="Stream URL",
+            command=self._stream_url,
+            fg_color="purple",
+            hover_color="#6a0dad",
+        )
+        self.stream_url_btn.grid(row=2, column=0, columnspan=3, padx=10, pady=15)
+
+        # Supported sources note
+        sources_label = ctk.CTkLabel(
+            parent,
+            text="Supported: HTTP/HTTPS audio files, internet radio streams (requires ffmpeg)",
+            text_color="gray",
+            font=ctk.CTkFont(size=10),
+        )
+        sources_label.grid(row=3, column=0, columnspan=3, padx=10)
 
     def _browse_file(self) -> None:
         """Open file browser to select audio file."""
@@ -223,3 +267,94 @@ class StreamPanel(ctk.CTkFrame):
         group_id = self.tone_group_entry.get().strip() or "all"
 
         self._on_stream_test_tone(frequency, duration, group_id)
+
+    def _stream_url(self) -> None:
+        """Start streaming from a URL."""
+        url = self.url_entry.get().strip()
+        group_id = self.url_group_entry.get().strip() or "all"
+
+        if not url:
+            return
+
+        # Basic URL validation
+        if not url.startswith(("http://", "https://")):
+            return
+
+        if self._on_stream_url:
+            self._on_stream_url(url, group_id)
+
+    def _build_controls(self) -> None:
+        """Build the playback control buttons."""
+        controls_frame = ctk.CTkFrame(self)
+        controls_frame.grid(row=2, column=0, sticky="ew", padx=10, pady=(5, 10))
+        controls_frame.grid_columnconfigure(0, weight=1)
+        controls_frame.grid_columnconfigure(1, weight=0)
+        controls_frame.grid_columnconfigure(2, weight=0)
+        controls_frame.grid_columnconfigure(3, weight=1)
+
+        # Status label
+        self.status_label = ctk.CTkLabel(
+            controls_frame,
+            text="Status: Idle",
+            font=ctk.CTkFont(size=12),
+        )
+        self.status_label.grid(row=0, column=0, padx=10, pady=5, sticky="w")
+
+        # Pause/Resume button
+        self.pause_btn = ctk.CTkButton(
+            controls_frame,
+            text="Pause",
+            command=self._on_pause_click,
+            width=80,
+            state="disabled",
+            fg_color="orange",
+            hover_color="darkorange",
+        )
+        self.pause_btn.grid(row=0, column=1, padx=5, pady=5)
+
+        # Stop button
+        self.stop_btn = ctk.CTkButton(
+            controls_frame,
+            text="Stop",
+            command=self._on_stop_click,
+            width=80,
+            state="disabled",
+            fg_color="red",
+            hover_color="darkred",
+        )
+        self.stop_btn.grid(row=0, column=2, padx=5, pady=5)
+
+    def _on_pause_click(self) -> None:
+        """Handle pause/resume button click."""
+        if self._on_pause_resume:
+            self._on_pause_resume()
+
+    def _on_stop_click(self) -> None:
+        """Handle stop button click."""
+        if self._on_stop:
+            self._on_stop()
+
+    def set_streaming_state(self, is_streaming: bool, is_paused: bool = False) -> None:
+        """Update the control buttons based on streaming state.
+
+        Args:
+            is_streaming: Whether audio is currently streaming
+            is_paused: Whether streaming is paused
+        """
+        self._is_streaming = is_streaming
+        self._is_paused = is_paused
+
+        if is_streaming:
+            self.pause_btn.configure(state="normal")
+            self.stop_btn.configure(state="normal")
+
+            if is_paused:
+                self.pause_btn.configure(text="Resume")
+                self.status_label.configure(text="Status: Paused")
+            else:
+                self.pause_btn.configure(text="Pause")
+                self.status_label.configure(text="Status: Playing")
+        else:
+            self.pause_btn.configure(state="disabled", text="Pause")
+            self.stop_btn.configure(state="disabled")
+            self.status_label.configure(text="Status: Idle")
