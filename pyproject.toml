@@ -10,7 +10,7 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3.12"
 authors = [
-    { name = "Developer" }
+    { name = "Chris Uthe" }
 ]
 keywords = ["sendspin", "audio", "streaming", "gui", "testing"]
 classifiers = [
@@ -22,8 +22,9 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Topic :: Multimedia :: Sound/Audio",
 ]
+
 dependencies = [
-    "aiosendspin",  # No version pin - allows local editable installs
+    "aiosendspin>=3.0.0",
     "customtkinter>=5.2.0",
     "pillow>=10.0.0",
     "av>=12.0.0",  # PyAV for audio decoding (ffmpeg bindings)
@@ -36,6 +37,11 @@ dev = [
     "pytest-asyncio>=0.21.0",
     "ruff>=0.1.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Sendspin/sendspin-gui"
+Repository = "https://github.com/Sendspin/sendspin-gui"
+Issues = "https://github.com/Sendspin/sendspin-gui/issues"
 
 [project.scripts]
 sendspin-gui = "sendspin_gui.__main__:main"
